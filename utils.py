@@ -42,29 +42,27 @@ def process_datasets(datasets):
         dataset['Quantile_33'] = dataset['Close_Open_Diff'].quantile(0.33)
         dataset['Quantile_66'] = dataset['Close_Open_Diff'].quantile(0.66)
 
+        dataset['DiffLabel3Days'] = 0
         differences = []
         for i in range(0, len(dataset) - 8, 5):  # Increase index by 5 in each iteration
             window = dataset.iloc[i+5:i+8]
             
             diff_value = (window.iloc[2]['Close'] - window.iloc[0]['Open'])
             differences.append(diff_value)
+            dataset.loc[dataset.index[i:i+5], 'DiffLabel3Days'] = diff_value
 
         # If you want to add the averages to the dataset:
-        dataset['DiffLabel3Days'] = 0
-        dataset.loc[dataset.index[i:i+4], 'DiffLabel3Days'] = pd.Series(differences)[i]
-
+        
+        
+        dataset['DiffLabel5Days'] = 0
         differences = []
         for i in range(0, len(dataset) - 10, 5):  # Increase index by 5 in each iteration
             window = dataset.iloc[i+5:i+10]
             diff_value = (window.iloc[4]['Close'] - window.iloc[0]['Open'])
             differences.append(diff_value)
-
-        # If you want to add the averages to the dataset:
-        dataset['DiffLabel5Days'] = 0
-        dataset.loc[dataset.index[i:i+4], 'DiffLabel5Days'] = pd.Series(differences).reindex(dataset.index)
+            dataset.loc[dataset.index[i:i+5], 'DiffLabel5Days'] = diff_value
 
         
-        breakpoint()
         dataset.loc[dataset['DiffLabel3Days'] > dataset['Quantile_66'], 'Label3Days'] = 3
         dataset.loc[dataset['DiffLabel3Days'] < dataset['Quantile_33'], 'Label3Days'] = 1
         dataset.loc[(dataset['DiffLabel3Days'] >= dataset['Quantile_33']) & (dataset['DiffLabel3Days'] <= dataset['Quantile_66']), 'Label3Days'] = 2
