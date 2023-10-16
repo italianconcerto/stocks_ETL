@@ -1,1 +1,7 @@
 data/stocks/
+data/bak_stocks/
+*.csv
+
+venv/
+__pycache__
+.DS_Store
