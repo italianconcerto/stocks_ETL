@@ -55,8 +55,6 @@ def process_datasets(stocks):
             diff_value = (window.iloc[2]['Close'] - window.iloc[0]['Open'])
             differences.append(diff_value)
             dataset.loc[dataset.index[i:i+5], 'DiffLabel3Days'] = diff_value
-
-        # If you want to add the averages to the dataset:
         
         
         dataset['DiffLabel5Days'] = 0.0
@@ -105,8 +103,6 @@ def plot_distribution(df, column_name, stock_name):
     if df.empty:
         raise ValueError("The DataFrame is empty.")
 
-    # Create a seaborn distribution plot (which includes the histogram and the density plot)
-    # sns.histplot(df[column_name], kde=True, stat='density', bins=30, color = 'blue')
     sns.kdeplot(df[column_name], fill=True, color='blue')
 
     # Plot formatting

@@ -1,26 +1,16 @@
 
 
 import glob
-
+from tqdm import tqdm
 import pandas as pd
 from config import *
 from utils import delete_files_in_folders, get_stock_data, process_datasets
 import os
 
-
-
 indices = tech_companies + healthcare_indices + finance_companies + manufacturing_companies
-
-
-
-
-
 
 if CLEAR_STOCKS_FILES:
     delete_files_in_folders(stocks_folder)
-
-
-if CLEAR_STOCKS_FILES:
     for index in tech_companies:
         print('Downloading', index)
         data = get_stock_data(index, start=start, end=end, interval='1d')
@@ -62,9 +52,6 @@ if CLEAR_STOCKS_FILES:
     
 # Create a list of dataframe by reading all the csv files in data/stocks folder using glob.glob
 stocks = []
-
-
-from tqdm import tqdm
 
 print("Reading csv files...")
 for file in tqdm(glob.glob(stocks_folder + "/*/*.csv")):
