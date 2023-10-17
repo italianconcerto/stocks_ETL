@@ -14,12 +14,18 @@ def get_stock_data(ticker, start, end, interval='1d'):
     
     if len(data) == 0 or data.index[0].strftime('%Y-%m-%d') != start or data.index[-1].strftime('%Y-%m-%d') != end:
         return None
-    data['Close_Open_Diff'] = data['Close'] - data['Open']
-    quantiles = data['Close_Open_Diff'].quantile([0.333, 0.666])
-    data['Quantile'] = 0
-    data.loc[data['Close_Open_Diff'] <= quantiles.iloc[0], 'Quantile'] = 1
-    data.loc[data['Close_Open_Diff'] > quantiles.iloc[1], 'Quantile'] = 3
-    data.loc[(data['Close_Open_Diff'] > quantiles.iloc[0]) & (data['Close_Open_Diff'] <= quantiles.iloc[1]), 'Quantile'] = 2
+    
+    data['Close_Open_Diff_3_days'] = data['Close'].shift(-2) - data['Close']
+    data['Close_Open_Diff_5_days'] = data['Close'].shift(-4) - data['Close']
+    data['Close_Open_Diff_7_days'] = data['Close'].shift(-6) - data['Close']
+
+    # quantiles = data['Close_Open_Diff'].quantile([0.333, 0.666])
+    # data['Quantile_3days'] = 0
+    # data['Quantile_5days'] = 0
+    # data['Quantile_7days'] = 0
+    # data.loc[data['Close_Open_Diff'] <= quantiles.iloc[0], 'Quantile'] = 1
+    # data.loc[data['Close_Open_Diff'] > quantiles.iloc[1], 'Quantile'] = 3
+    # data.loc[(data['Close_Open_Diff'] > quantiles.iloc[0]) & (data['Close_Open_Diff'] <= quantiles.iloc[1]), 'Quantile'] = 2
     return data
 
 
@@ -39,36 +45,64 @@ def process_datasets(stocks):
     for stock in tqdm(stocks):
         dataset = stock[0]
         stock_name = stock[1]
-        
+
+        dataset['Close_Open_Diff_3_days'] = dataset['Close'].shift(-2) - dataset['Close']
+        dataset['Close_Open_Diff_5_days'] = dataset['Close'].shift(-4) - dataset['Close']
+        dataset['Close_Open_Diff_7_days'] = dataset['Close'].shift(-6) - dataset['Close']
+
         dataset = dataset.sort_index()
-        dataset['Close_Open_Diff'] = dataset['Close'] - dataset['Open']
         if stock_name == "AAPL":
-            plot_distribution(dataset, 'Close_Open_Diff', stock_name)
-        dataset['Quantile_33'] = dataset['Close_Open_Diff'].quantile(0.33)
-        dataset['Quantile_66'] = dataset['Close_Open_Diff'].quantile(0.66)
+            plot_distribution(dataset, 'Close_Open_Diff_3_days', stock_name)
+            plot_distribution(dataset, 'Close_Open_Diff_5_days', stock_name)
+            plot_distribution(dataset, 'Close_Open_Diff_7_days', stock_name)
+        dataset['Quantile_33_3_days'] = dataset['Close_Open_Diff_3_days'].quantile(0.33)
+        dataset['Quantile_66_3_days'] = dataset['Close_Open_Diff_3_days'].quantile(0.66)
+        dataset['Quantile_33_5_days'] = dataset['Close_Open_Diff_5_days'].quantile(0.33)
+        dataset['Quantile_66_5_days'] = dataset['Close_Open_Diff_5_days'].quantile(0.66)
+        dataset['Quantile_33_7_days'] = dataset['Close_Open_Diff_7_days'].quantile(0.33)
+        dataset['Quantile_66_7_days'] = dataset['Close_Open_Diff_7_days'].quantile(0.66)
 
         dataset['DiffLabel3Days'] = 0.0
         differences = []
-        for i in range(0, len(dataset) - 8, 5):  # Increase index by 5 in each iteration
-            window = dataset.iloc[i+5:i+8]
+        for i in range(0, len(dataset) - 12):
+            # breakpoint()
+            window = dataset.iloc[i+10:i+13]
             
-            diff_value = (window.iloc[2]['Close'] - window.iloc[0]['Open'])
+            diff_value = (window.iloc[2]['Close'] - window.iloc[0]['Close'])
             differences.append(diff_value)
-            dataset.loc[dataset.index[i:i+5], 'DiffLabel3Days'] = diff_value
+            dataset.loc[[i], 'DiffLabel3Days'] = diff_value
         
         
         dataset['DiffLabel5Days'] = 0.0
         differences = []
-        for i in range(0, len(dataset) - 10, 5):  # Increase index by 5 in each iteration
-            window = dataset.iloc[i+5:i+10]
-            diff_value = (window.iloc[4]['Close'] - window.iloc[0]['Open'])
+        for i in range(0, len(dataset) - 15):
+            window = dataset.iloc[i+10:i+15]
+            diff_value = (window.iloc[4]['Close'] - window.iloc[0]['Close'])
             differences.append(diff_value)
-            dataset.loc[dataset.index[i:i+5], 'DiffLabel5Days'] = diff_value
+            dataset.loc[[i], 'DiffLabel5Days'] = diff_value
+
+        dataset['DiffLabel7Days'] = 0.0
+        differences = []
+        for i in range(0, len(dataset) - 17):
+            window = dataset.iloc[i+10:i+17]
+            diff_value = (window.iloc[6]['Close'] - window.iloc[0]['Close'])
+            differences.append(diff_value)
+            dataset.loc[[i], 'DiffLabel7Days'] = diff_value
 
         
-        dataset.loc[dataset['DiffLabel3Days'] > dataset['Quantile_66'], 'Label3Days'] = 3
-        dataset.loc[dataset['DiffLabel3Days'] < dataset['Quantile_33'], 'Label3Days'] = 1
-        dataset.loc[(dataset['DiffLabel3Days'] >= dataset['Quantile_33']) & (dataset['DiffLabel3Days'] <= dataset['Quantile_66']), 'Label3Days'] = 2
+        dataset.loc[dataset['DiffLabel3Days'] > dataset['Quantile_66_3_days'], 'Label3Days'] = 3
+        dataset.loc[dataset['DiffLabel3Days'] < dataset['Quantile_33_3_days'], 'Label3Days'] = 1
+        dataset.loc[(dataset['DiffLabel3Days'] >= dataset['Quantile_33_3_days']) & (dataset['DiffLabel3Days'] <= dataset['Quantile_66_3_days']), 'Label3Days'] = 2
+
+        dataset.loc[dataset['DiffLabel5Days'] > dataset['Quantile_66_5_days'], 'Label5Days'] = 3
+        dataset.loc[dataset['DiffLabel5Days'] < dataset['Quantile_33_5_days'], 'Label5Days'] = 1
+        dataset.loc[(dataset['DiffLabel5Days'] >= dataset['Quantile_33_5_days']) & (dataset['DiffLabel5Days'] <= dataset['Quantile_66_5_days']), 'Label5Days'] = 2
+
+        dataset.loc[dataset['DiffLabel7Days'] > dataset['Quantile_66_7_days'], 'Label7Days'] = 3
+        dataset.loc[dataset['DiffLabel7Days'] < dataset['Quantile_33_7_days'], 'Label7Days'] = 1
+        dataset.loc[(dataset['DiffLabel7Days'] >= dataset['Quantile_33_7_days']) & (dataset['DiffLabel7Days'] <= dataset['Quantile_66_7_days']), 'Label7Days'] = 2
+
+        # breakpoint()
 
         datasets.append(dataset)
         
@@ -107,7 +141,7 @@ def plot_distribution(df, column_name, stock_name):
 
     # Plot formatting
     plt.grid(True)
-    plt.title('Daily Open-Close Difference Distribution of {}'.format(stock_name))
+    plt.title('Probabilistic Distribution of Close-Close Difference for stock {}'.format(stock_name))
     plt.xlabel(column_name)
     plt.ylabel('Density')
     
