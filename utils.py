@@ -1,11 +1,11 @@
 
 import os
-import os
 from tqdm import tqdm
 import yfinance as yf
 from datetime import datetime, timedelta
 import pandas as pd
-import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 
 def get_stock_data(ticker, start, end, interval='1d'):
@@ -34,15 +34,20 @@ def delete_files_in_folders(root_folder):
                 print(f"Failed to delete {file_path}: {str(e)}")
                 
 
-def process_datasets(datasets):
-    all_windows = []
-    for dataset in tqdm(datasets):
+def process_datasets(stocks):
+    datasets = []
+    for stock in tqdm(stocks):
+        dataset = stock[0]
+        stock_name = stock[1]
+        
         dataset = dataset.sort_index()
         dataset['Close_Open_Diff'] = dataset['Close'] - dataset['Open']
+        if stock_name == "AAPL":
+            plot_distribution(dataset, 'Close_Open_Diff', stock_name)
         dataset['Quantile_33'] = dataset['Close_Open_Diff'].quantile(0.33)
         dataset['Quantile_66'] = dataset['Close_Open_Diff'].quantile(0.66)
 
-        dataset['DiffLabel3Days'] = 0
+        dataset['DiffLabel3Days'] = 0.0
         differences = []
         for i in range(0, len(dataset) - 8, 5):  # Increase index by 5 in each iteration
             window = dataset.iloc[i+5:i+8]
@@ -54,7 +59,7 @@ def process_datasets(datasets):
         # If you want to add the averages to the dataset:
         
         
-        dataset['DiffLabel5Days'] = 0
+        dataset['DiffLabel5Days'] = 0.0
         differences = []
         for i in range(0, len(dataset) - 10, 5):  # Increase index by 5 in each iteration
             window = dataset.iloc[i+5:i+10]
@@ -67,9 +72,9 @@ def process_datasets(datasets):
         dataset.loc[dataset['DiffLabel3Days'] < dataset['Quantile_33'], 'Label3Days'] = 1
         dataset.loc[(dataset['DiffLabel3Days'] >= dataset['Quantile_33']) & (dataset['DiffLabel3Days'] <= dataset['Quantile_66']), 'Label3Days'] = 2
 
+        datasets.append(dataset)
         
-        breakpoint()
-        return dataset
+    return datasets
         # dataset['Rolling_3D_Quantile_33'] = dataset['Close_Open_Diff'].rolling(window=3).quantile(0.33)
         # dataset['Rolling_3D_Quantile_66'] = dataset['Close_Open_Diff'].rolling(window=3).quantile(0.66)
         # dataset['Rolling_5D_Quantile_33'] = dataset['Close_Open_Diff'].rolling(window=5).quantile(0.33)
@@ -83,4 +88,32 @@ def process_datasets(datasets):
     # stacked_df = pd.concat(all_windows, keys=range(len(all_windows)))
     # return stacked_df
 
+
+def plot_distribution(df, column_name, stock_name):
+    """
+    Plots the probabilistic distribution of a specified column in a DataFrame.
+
+    :param df: Pandas DataFrame containing the data.
+    :param column_name: Name of the column to plot. Defaults to 'Diff'.
+    """
+
+    # Check if the column exists in the DataFrame
+    if column_name not in df.columns:
+        raise ValueError(f"'{column_name}' is not a column in the DataFrame.")
+
+    # Check if DataFrame is empty
+    if df.empty:
+        raise ValueError("The DataFrame is empty.")
+
+    # Create a seaborn distribution plot (which includes the histogram and the density plot)
+    # sns.histplot(df[column_name], kde=True, stat='density', bins=30, color = 'blue')
+    sns.kdeplot(df[column_name], fill=True, color='blue')
+
+    # Plot formatting
+    plt.grid(True)
+    plt.title('Daily Open-Close Difference Distribution of {}'.format(stock_name))
+    plt.xlabel(column_name)
+    plt.ylabel('Density')
     
+    # Show the plot
+    plt.show()

@@ -5,10 +5,11 @@ import glob
 import pandas as pd
 from config import *
 from utils import delete_files_in_folders, get_stock_data, process_datasets
+import os
 
 
 
-indices = healthcare_indices + tech_companies + finance_companies + manufacturing_companies
+indices = tech_companies + healthcare_indices + finance_companies + manufacturing_companies
 
 
 
@@ -68,10 +69,8 @@ from tqdm import tqdm
 print("Reading csv files...")
 for file in tqdm(glob.glob(stocks_folder + "/*/*.csv")):
     df = pd.read_csv(file)
-    stocks.append(df)
-
-
+    stock_name = os.path.basename(file).replace('.csv', '')
+    stocks.append((df, stock_name))
 
 print("Processing datasets...")
 stacked_data = process_datasets(stocks)
-breakpoint()
