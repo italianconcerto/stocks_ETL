@@ -5,7 +5,7 @@ from config import *
 from utils import delete_files_in_folders, get_stock_data, process_datasets
 import os
 
-indices = tech_companies + healthcare_indices + finance_companies + manufacturing_companies
+indices = tech_companies + healthcare_companies + finance_companies + manufacturing_companies
 
 if CLEAR_STOCKS_FILES:
     delete_files_in_folders(stocks_folder)
@@ -18,7 +18,7 @@ if CLEAR_STOCKS_FILES:
         data.to_csv('data/stocks/tech/' + index + '.csv')
         print('Downloaded', index)
         
-    for index in healthcare_indices:
+    for index in healthcare_companies:
         print('Downloading', index)
         data = get_stock_data(index, start=start, end=end, interval='1d')
         if data is None:

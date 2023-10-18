@@ -5,7 +5,7 @@ end = "2022-12-30"
 
 
 
-healthcare_indices = [
+healthcare_companies = [
     "ABEO", "ABMD", "ABT", "ABUS", "ACAD", "ACHC", "ACHV", "ACIU", "ACOR", "ACRS",
     # "ACRX", "ADAP", "ADIL", "ADMA", "ADMP", "ADMS", "ADPT", "ADRO", "ADUS", "ADVM",
     # "AEMD", "AERI", "AEZS", "AFMD", "AGEN", "AGIO", "AGLE", "AGRX", "AGTC", "AHPI",

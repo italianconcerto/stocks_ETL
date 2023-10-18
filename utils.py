@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+from config import *
 
 
 def get_stock_data(ticker, start, end, interval='1d'):
@@ -51,7 +52,7 @@ def process_datasets(stocks):
         dataset['Close_Open_Diff_7_days'] = dataset['Close'].shift(-6) - dataset['Close']
 
         dataset = dataset.sort_index()
-        if stock_name == "AAPL":
+        if stock_name in tech_companies:
             plot_distribution(dataset, 'Close_Open_Diff_3_days', stock_name)
             plot_distribution(dataset, 'Close_Open_Diff_5_days', stock_name)
             plot_distribution(dataset, 'Close_Open_Diff_7_days', stock_name)
