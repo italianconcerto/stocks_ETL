@@ -16,9 +16,9 @@ def get_stock_data(ticker, start, end, interval='1d'):
     if len(data) == 0 or data.index[0].strftime('%Y-%m-%d') != start or data.index[-1].strftime('%Y-%m-%d') != end:
         return None
     
-    data['Close_Open_Diff_3_days'] = data['Close'].shift(-2) - data['Close']
-    data['Close_Open_Diff_5_days'] = data['Close'].shift(-4) - data['Close']
-    data['Close_Open_Diff_7_days'] = data['Close'].shift(-6) - data['Close']
+    data['Close_Diff_3_days'] = data['Close'].shift(-2) - data['Close']
+    data['Close_Diff_5_days'] = data['Close'].shift(-4) - data['Close']
+    data['Close_Diff_7_days'] = data['Close'].shift(-6) - data['Close']
 
     # quantiles = data['Close_Open_Diff'].quantile([0.333, 0.666])
     # data['Quantile_3days'] = 0
@@ -47,21 +47,29 @@ def process_datasets(stocks):
         dataset = stock[0]
         stock_name = stock[1]
 
-        dataset['Close_Open_Diff_3_days'] = dataset['Close'].shift(-2) - dataset['Close']
-        dataset['Close_Open_Diff_5_days'] = dataset['Close'].shift(-4) - dataset['Close']
-        dataset['Close_Open_Diff_7_days'] = dataset['Close'].shift(-6) - dataset['Close']
+        dataset['Close_Diff_3_days'] = dataset['Close'].shift(-2) - dataset['Close']
+        dataset['Close_Diff_5_days'] = dataset['Close'].shift(-4) - dataset['Close']
+        dataset['Close_Diff_7_days'] = dataset['Close'].shift(-6) - dataset['Close']
 
         dataset = dataset.sort_index()
+        dataset['Quantile_33_3_days'] = dataset['Close_Diff_3_days'].quantile(0.33)
+        dataset['Quantile_66_3_days'] = dataset['Close_Diff_3_days'].quantile(0.66)
+        dataset['Quantile_33_5_days'] = dataset['Close_Diff_5_days'].quantile(0.33)
+        dataset['Quantile_66_5_days'] = dataset['Close_Diff_5_days'].quantile(0.66)
+        dataset['Quantile_33_7_days'] = dataset['Close_Diff_7_days'].quantile(0.33)
+        dataset['Quantile_66_7_days'] = dataset['Close_Diff_7_days'].quantile(0.66)
+
         if stock_name in tech_companies:
-            plot_distribution(dataset, 'Close_Open_Diff_3_days', stock_name)
-            plot_distribution(dataset, 'Close_Open_Diff_5_days', stock_name)
-            plot_distribution(dataset, 'Close_Open_Diff_7_days', stock_name)
-        dataset['Quantile_33_3_days'] = dataset['Close_Open_Diff_3_days'].quantile(0.33)
-        dataset['Quantile_66_3_days'] = dataset['Close_Open_Diff_3_days'].quantile(0.66)
-        dataset['Quantile_33_5_days'] = dataset['Close_Open_Diff_5_days'].quantile(0.33)
-        dataset['Quantile_66_5_days'] = dataset['Close_Open_Diff_5_days'].quantile(0.66)
-        dataset['Quantile_33_7_days'] = dataset['Close_Open_Diff_7_days'].quantile(0.33)
-        dataset['Quantile_66_7_days'] = dataset['Close_Open_Diff_7_days'].quantile(0.66)
+            quantile_values = [dataset['Quantile_33_3_days'].iloc[0], 
+                               dataset['Quantile_66_3_days'].iloc[0],
+                               dataset['Quantile_33_5_days'].iloc[0],
+                               dataset['Quantile_66_5_days'].iloc[0],
+                               dataset['Quantile_33_7_days'].iloc[0],
+                               dataset['Quantile_66_7_days'].iloc[0]]
+                               
+            plot_distribution(dataset, 'Close_Diff_3_days', quantile_values[0], quantile_values[1], stock_name)
+            plot_distribution(dataset, 'Close_Diff_5_days', quantile_values[2], quantile_values[3], stock_name)
+            plot_distribution(dataset, 'Close_Diff_7_days', quantile_values[4], quantile_values[5], stock_name)
 
         dataset['DiffLabel3Days'] = 0.0
         differences = []
@@ -103,26 +111,12 @@ def process_datasets(stocks):
         dataset.loc[dataset['DiffLabel7Days'] < dataset['Quantile_33_7_days'], 'Label7Days'] = 1
         dataset.loc[(dataset['DiffLabel7Days'] >= dataset['Quantile_33_7_days']) & (dataset['DiffLabel7Days'] <= dataset['Quantile_66_7_days']), 'Label7Days'] = 2
 
-        # breakpoint()
-
         datasets.append(dataset)
         
     return datasets
-        # dataset['Rolling_3D_Quantile_33'] = dataset['Close_Open_Diff'].rolling(window=3).quantile(0.33)
-        # dataset['Rolling_3D_Quantile_66'] = dataset['Close_Open_Diff'].rolling(window=3).quantile(0.66)
-        # dataset['Rolling_5D_Quantile_33'] = dataset['Close_Open_Diff'].rolling(window=5).quantile(0.33)
-        # dataset['Rolling_5D_Quantile_66'] = dataset['Close_Open_Diff'].rolling(window=5).quantile(0.66)
-        # dataset['Rolling_7D_Quantile_33'] = dataset['Close_Open_Diff'].rolling(window=7).quantile(0.33)
-        # dataset['Rolling_7D_Quantile_66'] = dataset['Close_Open_Diff'].rolling(window=7).quantile(0.66)
-        # for i in range(len(dataset) - 6):
-        #     window = dataset.iloc[i:i+7]
-        #     all_windows.append(window)
-    
-    # stacked_df = pd.concat(all_windows, keys=range(len(all_windows)))
-    # return stacked_df
 
 
-def plot_distribution(df, column_name, stock_name):
+def plot_distribution(df, column_name, quantile_33, quantile_66, stock_name):
     """
     Plots the probabilistic distribution of a specified column in a DataFrame.
 
@@ -138,13 +132,33 @@ def plot_distribution(df, column_name, stock_name):
     if df.empty:
         raise ValueError("The DataFrame is empty.")
 
-    sns.kdeplot(df[column_name], fill=True, color='blue')
+    data = df[column_name].dropna()
+
+    # Creating the histogram. The 'density=True' parameter ensures that we create a probability density histogram
+    # where the sum of all bins' heights equals 1, representing the total probability.
+    plt.hist(data, bins=500, density=True, alpha=0.75, color='blue')  # 'bins' can be adjusted depending on your data
+
+    # Quantile line plot
+    plt.axvline(x=quantile_33, color='red', linestyle='--', linewidth=2, label=f'Quantile_33: {quantile_33}')
+    plt.axvline(x=quantile_66, color='red', linestyle='--', linewidth=2, label=f'Quantile_66: {quantile_66}')
+
+    ticks = [tick for tick in plt.xticks()[0] if tick != 0.0]  # get the current tick locations and labels
+
+    # Adding the new tick for the quantile value (rounding and formatting for better appearance)
+    new_ticks = [round(quantile_33, 3), round(quantile_66, 3)]  # or use another criterion suitable for your values
+    ticks = list(ticks) + new_ticks
+
+    # Set the ticks to the x-axis, this includes the original and the new tick for the quantile value
+    plt.xticks(ticks, [str(tick) for tick in ticks])  # converting values to string for proper display
+
 
     # Plot formatting
     plt.grid(True)
     plt.title('Probabilistic Distribution of Close-Close Difference for stock {}'.format(stock_name))
     plt.xlabel(column_name)
     plt.ylabel('Density')
+
+    plt.xticks(rotation=90)
     
     # Show the plot
     plt.show()
