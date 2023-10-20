@@ -8,6 +8,9 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from config import *
 
+# top5 = ["BIIB", "ORLY", "VRTX", "AMGN", "COST"]
+top5 = ["NVDA", "CMCSA", "FAST", "CSCO", "EBAY", "ATVI"]
+closest_mean_median = ["ADP", "PCAR"]
 
 def get_stock_data(ticker, start, end, interval='1d'):
     end_date = (datetime.strptime(end, '%Y-%m-%d') + timedelta(days=1)).strftime('%Y-%m-%d')
@@ -19,7 +22,7 @@ def get_stock_data(ticker, start, end, interval='1d'):
     data['Close_Diff_3_days'] = data['Close'].shift(-2) - data['Close']
     data['Close_Diff_5_days'] = data['Close'].shift(-4) - data['Close']
     data['Close_Diff_7_days'] = data['Close'].shift(-6) - data['Close']
-
+    
     # quantiles = data['Close_Open_Diff'].quantile([0.333, 0.666])
     # data['Quantile_3days'] = 0
     # data['Quantile_5days'] = 0
@@ -59,7 +62,7 @@ def process_datasets(stocks):
         dataset['Quantile_33_7_days'] = dataset['Close_Diff_7_days'].quantile(0.33)
         dataset['Quantile_66_7_days'] = dataset['Close_Diff_7_days'].quantile(0.66)
 
-        if stock_name in tech_companies:
+        if stock_name in closest_mean_median:
             quantile_values = [dataset['Quantile_33_3_days'].iloc[0], 
                                dataset['Quantile_66_3_days'].iloc[0],
                                dataset['Quantile_33_5_days'].iloc[0],
@@ -97,7 +100,6 @@ def process_datasets(stocks):
             diff_value = (window.iloc[6]['Close'] - window.iloc[0]['Close'])
             differences.append(diff_value)
             dataset.loc[[i], 'DiffLabel7Days'] = diff_value
-
         
         dataset.loc[dataset['DiffLabel3Days'] > dataset['Quantile_66_3_days'], 'Label3Days'] = 3
         dataset.loc[dataset['DiffLabel3Days'] < dataset['Quantile_33_3_days'], 'Label3Days'] = 1
@@ -111,7 +113,7 @@ def process_datasets(stocks):
         dataset.loc[dataset['DiffLabel7Days'] < dataset['Quantile_33_7_days'], 'Label7Days'] = 1
         dataset.loc[(dataset['DiffLabel7Days'] >= dataset['Quantile_33_7_days']) & (dataset['DiffLabel7Days'] <= dataset['Quantile_66_7_days']), 'Label7Days'] = 2
 
-        datasets.append(dataset)
+        datasets.append((dataset, stock_name))
         
     return datasets
 
@@ -162,3 +164,109 @@ def plot_distribution(df, column_name, quantile_33, quantile_66, stock_name):
     
     # Show the plot
     plt.show()
+
+
+def extract_top_diff_datasets(all_data, far=True):
+    # Creating a dictionary to store the results
+    results = {
+        '3_days': [],
+        '5_days': [],
+        '7_days': []
+    }
+
+    # Function to get top 5 datasets based on quantile differences
+    def get_top_5(all_data, quantile_33_col, quantile_66_col, far):
+        quantile_diffs = []
+        for data in all_data:
+            # Calculate the difference between the 66th and 33rd quantiles
+            dataset = data[0]
+            stock_name = data[1]
+            quantile_diff = dataset[quantile_66_col].iloc[0] - dataset[quantile_33_col].iloc[0]
+            quantile_diffs.append((stock_name, dataset, quantile_diff))
+
+        # Sort the datasets based on the quantile difference
+        quantile_diffs.sort(key=lambda x: x[2], reverse=far)
+
+        # Return the top 5 datasets
+        return [(item[1], item[0]) for item in quantile_diffs[:5]]
+    
+    import pandas as pd  # make sure pandas is imported
+
+    def compute_closest(all_data, quantile_33_col, quantile_66_col, metric):
+        # Define the central tendency function based on the metric
+        central_tendency = {
+            'mean': pd.Series.mean,
+            'median': pd.Series.median
+        }.get(metric)
+
+        if not central_tendency or not all_data:
+            return None  # Return None for invalid metric or empty data
+
+        quantile_diffs = pd.Series([data[0][quantile_66_col].iloc[0] - data[0][quantile_33_col].iloc[0] for data in all_data])
+        central_value = central_tendency(quantile_diffs)
+
+        # Find and return the dataset closest to the central tendency value
+        closest_data = min(all_data, key=lambda x: abs((x[0][quantile_66_col].iloc[0] - x[0][quantile_33_col].iloc[0]) - central_value), default=None)
+        
+        # The closest_data contains the dataset and the stock name, you can return as needed
+        return (closest_data, central_value)  # or closest_data[1] for stock_name only or closest_data[0] for dataset only
+
+
+    # Extract top 5 for 3 days, 5 days, and 7 days
+    results['top5_3_days'] = get_top_5(all_data, 'Quantile_33_3_days', 'Quantile_66_3_days', far)
+    results['top5_5_days'] = get_top_5(all_data, 'Quantile_33_5_days', 'Quantile_66_5_days', far)
+    results['top5_7_days'] = get_top_5(all_data, 'Quantile_33_7_days', 'Quantile_66_7_days', far)
+
+    results['closest_mean_3_days'] = compute_closest(all_data, 'Quantile_33_3_days', 'Quantile_66_3_days', 'mean')
+    results['closest_median_3_days'] = compute_closest(all_data, 'Quantile_33_3_days', 'Quantile_66_3_days', 'median')
+
+    results['closest_mean_5_days'] = compute_closest(all_data, 'Quantile_33_5_days', 'Quantile_66_5_days', 'mean')
+    results['closest_median_5_days'] = compute_closest(all_data, 'Quantile_33_5_days', 'Quantile_66_5_days', 'median')
+
+    results['closest_mean_7_days'] = compute_closest(all_data, 'Quantile_33_7_days', 'Quantile_66_7_days', 'mean')
+    results['closest_median_7_days'] = compute_closest(all_data, 'Quantile_33_7_days', 'Quantile_66_7_days', 'median')
+
+    return results
+
+def print_info(data):
+    print("\n" + "----- MAX DIFF -----" + "\n")
+    top_datasets = extract_top_diff_datasets(data)
+    print("MAX Q33-Q66 diff 3 days: \n")
+    [print(top_datasets['top5_3_days'][i][1] + ", Quantile33: " + str(top_datasets['top5_3_days'][i][0]['Quantile_33_3_days'][0]) + ", Quantile66: " + str(top_datasets['top5_3_days'][i][0]['Quantile_66_3_days'][0])) for i in range(0,5)]
+    print("MAX Q33-Q66 diff 5 days: \n")
+    [print(top_datasets['top5_5_days'][i][1] + ", Quantile33: " + str(top_datasets['top5_5_days'][i][0]['Quantile_33_5_days'][0]) + ", Quantile66: " + str(top_datasets['top5_5_days'][i][0]['Quantile_66_5_days'][0])) for i in range(0,5)]
+    print("MAX Q33-Q66 diff 7 days: \n")
+    [print(top_datasets['top5_7_days'][i][1] + ", Quantile33: " + str(top_datasets['top5_7_days'][i][0]['Quantile_33_7_days'][0]) + ", Quantile66: " + str(top_datasets['top5_7_days'][i][0]['Quantile_66_7_days'][0])) for i in range(0,5)]
+
+    print("\n" + "----- MIN DIFF -----" + "\n")
+    top_datasets = extract_top_diff_datasets(data, False)
+    print("MIN Q33-Q66 diff 3 days: \n")
+    [print(top_datasets['top5_3_days'][i][1] + ", Quantile33: " + str(top_datasets['top5_3_days'][i][0]['Quantile_33_3_days'][0]) + ", Quantile66: " + str(top_datasets['top5_3_days'][i][0]['Quantile_66_3_days'][0])) for i in range(0,5)]
+    print("MIN Q33-Q66 diff 5 days: \n")
+    [print(top_datasets['top5_5_days'][i][1] + ", Quantile33: " + str(top_datasets['top5_5_days'][i][0]['Quantile_33_5_days'][0]) + ", Quantile66: " + str(top_datasets['top5_5_days'][i][0]['Quantile_66_5_days'][0])) for i in range(0,5)]
+    print("MIN Q33-Q66 diff 7 days: \n")
+    [print(top_datasets['top5_7_days'][i][1] + ", Quantile33: " + str(top_datasets['top5_7_days'][i][0]['Quantile_33_7_days'][0]) + ", Quantile66: " + str(top_datasets['top5_7_days'][i][0]['Quantile_66_7_days'][0])) for i in range(0,5)]
+
+
+
+    print("\n" + "----- CLOSEST MEAN -----" + "\n")
+    print("Quantile diff mean 3 days: " + str(top_datasets['closest_mean_3_days'][1]))
+    print("Quantile diff mean 5 days: " + str(top_datasets['closest_mean_5_days'][1]))
+    print("Quantile diff mean 7 days: " + str(top_datasets['closest_mean_7_days'][1]))
+    dataset, stock_name = top_datasets['closest_mean_3_days'][0]
+    print("\nClosest to mean: " + stock_name + ", Quantile33: " + str(top_datasets['closest_mean_3_days'][0][0]['Quantile_33_3_days'][0]) + ", Quantile66: " + str(top_datasets['closest_mean_3_days'][0][0]['Quantile_66_3_days'][0]))
+    dataset, stock_name = top_datasets['closest_mean_5_days'][0]
+    print("\nClosest to mean: " + stock_name + ", Quantile33: " + str(top_datasets['closest_mean_5_days'][0][0]['Quantile_33_5_days'][0]) + ", Quantile66: " + str(top_datasets['closest_mean_5_days'][0][0]['Quantile_66_5_days'][0]))
+    dataset, stock_name = top_datasets['closest_mean_7_days'][0]
+    print("\nClosest to mean: " + stock_name + ", Quantile33: " + str(top_datasets['closest_mean_7_days'][0][0]['Quantile_33_7_days'][0]) + ", Quantile66: " + str(top_datasets['closest_mean_7_days'][0][0]['Quantile_66_7_days'][0]))
+
+    print("\n" + "----- CLOSEST MEDIAN -----" + "\n")
+    print("Quantile diff median 3 days: " + str(top_datasets['closest_median_3_days'][1]))
+    print("Quantile diff median 5 days: " + str(top_datasets['closest_median_5_days'][1]))
+    print("Quantile diff median 7 days: " + str(top_datasets['closest_median_7_days'][1]))
+    dataset, stock_name = top_datasets['closest_median_3_days'][0]
+    print("\nClosest to median: " + stock_name + ", Quantile33: " + str(top_datasets['closest_median_3_days'][0][0]['Quantile_33_3_days'][0]) + ", Quantile66: " + str(top_datasets['closest_median_3_days'][0][0]['Quantile_66_3_days'][0]))
+    dataset, stock_name = top_datasets['closest_median_5_days'][0]
+    print("\nClosest to median: " + stock_name + ", Quantile33: " + str(top_datasets['closest_median_5_days'][0][0]['Quantile_33_5_days'][0]) + ", Quantile66: " + str(top_datasets['closest_median_5_days'][0][0]['Quantile_66_5_days'][0]))
+    dataset, stock_name = top_datasets['closest_median_7_days'][0]
+    print("\nClosest to median: " + stock_name + ", Quantile33: " + str(top_datasets['closest_median_7_days'][0][0]['Quantile_33_7_days'][0]) + ", Quantile66: " + str(top_datasets['closest_median_7_days'][0][0]['Quantile_66_7_days'][0]))

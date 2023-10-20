@@ -3,10 +3,10 @@ stocks_folder = "data/stocks"
 start = "2010-01-04"
 end = "2022-12-30"
 
-
+nasdaq_100_companies = ["AAPL", "ADBE", "ADP", "ADSK", "AMAT", "AMGN", "AMZN", "ATVI", "BIIB", "CMCSA", "COST", "CSCO", "CTSH", "EBAY", "FAST", "FISV", "GILD", "GOOG", "INTC", "INTU", "ISRG", "MSFT", "NVDA", "ORLY", "PAYX", "PCAR", "QCOM", "ROST", "SBUX", "VRTX"]
 
 healthcare_companies = [
-    "ABEO", "ABMD", "ABT", "ABUS", "ACAD", "ACHC", "ACHV", "ACIU", "ACOR", "ACRS",
+    "ABEO", "ABMD", "ABT", "ABUS", #"ACAD", "ACHC", "ACHV", "ACIU", "ACOR", "ACRS",
     # "ACRX", "ADAP", "ADIL", "ADMA", "ADMP", "ADMS", "ADPT", "ADRO", "ADUS", "ADVM",
     # "AEMD", "AERI", "AEZS", "AFMD", "AGEN", "AGIO", "AGLE", "AGRX", "AGTC", "AHPI",
     # "AIMT", "AKAO", "AKBA", "AKCA", "AKER", "AKRO", "AKRX", "AKTX", "ALBO", "ALC",
@@ -105,7 +105,7 @@ healthcare_companies = [
     ]
 
 tech_companies = [
-    "AAPL", "MSFT", "AMZN", "GOOGL", "FB", "TSLA", "NVDA", "PYPL", "INTC", "CSCO",
+    "AAPL", "MSFT", "AMZN", #"GOOGL", "FB", "TSLA", "NVDA", "PYPL", "INTC", "CSCO",
     # "ADBE", "NFLX", "ORCL", "IBM", "QCOM", "SAP", "TXN", "AVGO", "BIDU", "JD",
     # "UBER", "CTSH", "INTU", "AMD", "VMW", "HPQ", "NOW", "TWTR", "TEAM", "SNAP",
     # "EA", "ADSK", "CRWD", "ZM", "DOCU", "OKTA", "DDOG", "ATVI", "SPLK", "MRVL",
@@ -128,7 +128,7 @@ tech_companies = [
 ]
 
 finance_companies = [
-    "CME", "SPGI", "MSCI", "MCO", "SIVB", "FITB", "ETFC", "MKTX", "RF", "CBOE",
+    "CME", "SPGI", "MSCI", #"MCO", "SIVB", "FITB", "ETFC", "MKTX", "RF", "CBOE",
     # "HBAN", "NDAQ", "ZION", "FRC", "PBCT", "PACW", "TFSL", "CINF", "ARES", "IBKR",
     # "SEIC", "FULT", "WAL", "GBCI", "TCBI", "SSB", "FCFS", "BPFH", "CM", "PFG",
     # "RJF", "AON", "TROW", "AMP", "AJG", "IVZ", "AIZ", "NTRS", "FHN", "JHG",
@@ -151,7 +151,7 @@ finance_companies = [
 ]
 
 manufacturing_companies = [
-    "AAL", "ABMD", "AOSL", "ACMR", "ADI", "ADP", "ADSK", "AERI", "AGIO", "AIMC",
+    "AAL", "ABMD", "AOSL", #"ACMR", "ADI", "ADP", "ADSK", "AERI", "AGIO", "AIMC",
     # "AIRG", "ALCO", "ALGT", "ALXN", "AMAT", "AMBA", "AMKR", "AMOT", "AMPH", "AMSC",
     # "AMWD", "ANAB", "ANSS", "AOSL", "APEN", "AREX", "ARLP", "ARTNA", "ASTE", "ATEC",
     # "ATRA", "ATRO", "ATVI", "AVAV", "AXGN", "AXTI", "AZPN", "B", "BBSI", "BCPC",
